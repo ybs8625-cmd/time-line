@@ -83,7 +83,54 @@ export function project(lat, lon) {
 export function yearsFromPoints(points, timeZone) {
   const years = new Set();
   for (const point of points) years.add(yearMonthOf(point.t, timeZone).year);
-  return [...years].sort((a, b) => b - a);
+  return [...years].sort((a, b) => a - b);
+}
+
+export function dataSpan(points, timeZone) {
+  if (!points.length) return null;
+  const first = yearMonthOf(points[0].t, timeZone);
+  const last = yearMonthOf(points[points.length - 1].t, timeZone);
+  return { first, last };
+}
+
+export function yearsInSpan(span) {
+  if (!span) return [];
+  const years = [];
+  for (let year = span.first.year; year <= span.last.year; year++) years.push(year);
+  return years;
+}
+
+export function monthsForYear(year, span) {
+  if (!span || year < span.first.year || year > span.last.year) return [];
+  const from = year === span.first.year ? span.first.month : 1;
+  const to = year === span.last.year ? span.last.month : 12;
+  const months = [];
+  for (let month = from; month <= to; month++) months.push(month);
+  return months;
+}
+
+export function clampPeriod(period, span) {
+  if (!span) return period;
+  const toValue = (year, month) => year * 12 + month;
+  const fromValue = (value) => {
+    const year = Math.floor((value - 1) / 12);
+    return { year, month: value - year * 12 };
+  };
+  let start = toValue(period.startYear, period.startMonth);
+  let end = toValue(period.endYear, period.endMonth);
+  if (!Number.isFinite(start)) start = span.first.value;
+  if (!Number.isFinite(end)) end = span.last.value;
+  start = Math.min(span.last.value, Math.max(span.first.value, start));
+  end = Math.min(span.last.value, Math.max(span.first.value, end));
+  if (end < start) end = start;
+  const startParts = fromValue(start);
+  const endParts = fromValue(end);
+  return {
+    startYear: startParts.year,
+    startMonth: startParts.month,
+    endYear: endParts.year,
+    endMonth: endParts.month,
+  };
 }
 
 export function dataSpan(points, timeZone) {

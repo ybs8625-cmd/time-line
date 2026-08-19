@@ -1,14 +1,17 @@
 import { frameAtOverallProgress } from "./animation.js";
 import {
   buildJourney,
+  clampPeriod,
+  dataSpan,
   defaultPeriod,
   filterPoints,
   formatDataSpanKorean,
   formatPeriodKorean,
+  monthsForYear,
   periodLabel,
   positionAtProgress,
   resolveTitle,
-  yearsFromPoints,
+  yearsInSpan,
 } from "./models.js";
 import { TimelinePainter } from "./painter.js";
 import { recordJourney, renderOverview } from "./recorder.js";
@@ -127,19 +130,41 @@ function fillSelect(select, values, selected) {
     .join("");
 }
 
-function monthOptions(selected) {
-  return Array.from({ length: 12 }, (_, i) => i + 1)
-    .map((month) => `<option value="${month}" ${month === selected ? "selected" : ""}>${month}월</option>`)
+function monthOptions(months, selected) {
+  const pick = months.includes(selected) ? selected : months[0];
+  return months
+    .map((month) => `<option value="${month}" ${month === pick ? "selected" : ""}>${month}월</option>`)
     .join("");
 }
 
+let rebuildingPeriod = false;
+
 function rebuildPeriodSelectors(preferred) {
-  const years = yearsFromPoints(points, timeZone);
-  const period = preferred ?? defaultPeriod(points, timeZone);
-  fillSelect(els.startYear, years, period.startYear);
-  fillSelect(els.endYear, years, period.endYear);
-  els.startMonth.innerHTML = monthOptions(period.startMonth);
-  els.endMonth.innerHTML = monthOptions(period.endMonth);
+  const span = dataSpan(points, timeZone);
+  if (!span) {
+    els.startYear.innerHTML = "";
+    els.endYear.innerHTML = "";
+    els.startMonth.innerHTML = "";
+    els.endMonth.innerHTML = "";
+    return;
+  }
+  rebuildingPeriod = true;
+  const period = clampPeriod(preferred ?? defaultPeriod(points, timeZone), span);
+  const years = yearsInSpan(span);
+  const startYears = years.filter((year) => year <= period.endYear);
+  const endYears = years.filter((year) => year >= period.startYear);
+  fillSelect(els.startYear, startYears, period.startYear);
+  fillSelect(els.endYear, endYears, period.endYear);
+
+  const startMonths = monthsForYear(period.startYear, span);
+  els.startMonth.innerHTML = monthOptions(startMonths, period.startMonth);
+  const startMonth = Number(els.startMonth.value);
+  let endMonths = monthsForYear(period.endYear, span);
+  if (period.endYear === period.startYear) {
+    endMonths = endMonths.filter((month) => month >= startMonth);
+  }
+  els.endMonth.innerHTML = monthOptions(endMonths, period.endMonth);
+  rebuildingPeriod = false;
 }
 
 function syncJourney() {
@@ -340,7 +365,7 @@ function bindUi() {
   els.ownerName.value = settings.name || "여행자";
   els.titleTemplate.value = settings.template || DEFAULT_TEMPLATE;
   els.duration.innerHTML = DURATIONS.map(
-    (value) => `<option value="${value}" ${value === (settings.duration || 20) ? "selected" : ""}>${value}초</option>`,
+    (value) => `<option value="${value}" ${value === 60 ? "selected" : ""}>${value}초</option>`,
   ).join("");
 
   els.chooseFile.addEventListener("click", () => els.fileInput.click());
@@ -368,9 +393,11 @@ function bindUi() {
 
   for (const select of [els.startYear, els.startMonth, els.endYear, els.endMonth, els.duration]) {
     select.addEventListener("change", () => {
+      if (rebuildingPeriod) return;
       saveSettings();
       previewing = false;
       els.previewBtn.textContent = "미리보기";
+      if (select !== els.duration) rebuildPeriodSelectors(currentPeriod());
       syncJourney();
     });
   }
