@@ -87,7 +87,7 @@ button.ghost {
   border: 1px solid var(--line);
 }
 button:disabled { opacity: 0.55; cursor: not-allowed; }
-a.link-btn {
+a.link-btn, label.link-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -96,8 +96,9 @@ a.link-btn {
   color: var(--on-interactive);
   border-radius: 999px;
   padding: 10px 16px;
+  cursor: pointer;
 }
-a.link-btn.ghost {
+a.link-btn.ghost, label.link-btn.ghost {
   background: transparent;
   color: var(--ink);
   border: 1px solid var(--line);
@@ -134,7 +135,6 @@ a.link-btn.ghost {
   white-space: nowrap;
   border: 0;
 }
-label.link-btn { cursor: pointer; }
 label:not(.link-btn) {
   display: grid;
   gap: 6px;
