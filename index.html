@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>타임라인 비주얼라이저 V1.2</title>
+    <title>타임라인 비주얼라이저 V1.3</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
     <link rel="stylesheet" href="./css/app.css" />
@@ -14,7 +14,7 @@
         <div class="brand">
           <img src="./favicon.svg" alt="" width="36" height="36" />
           <div>
-            <h1>타임라인 비주얼라이저 <span class="version">V1.2</span></h1>
+            <h1>타임라인 비주얼라이저 <span class="version">V1.3</span></h1>
             <p>아이폰에서 보낸 Timeline.json을 이 컴퓨터에서 움직이는 여행 영상으로 만듭니다. 파일은 업로드되지 않습니다.</p>
           </div>
         </div>
@@ -25,7 +25,7 @@
         <section class="panel">
           <h2>타임라인 파일</h2>
           <div class="button-row">
-            <button type="button" id="choose-file" class="primary">파일 선택</button>
+            <label for="file-input" id="choose-file" class="link-btn">파일 선택</label>
             <button type="button" id="sample-file">샘플로 체험</button>
           </div>
           <div class="button-row">
@@ -41,8 +41,10 @@
             <button type="button" class="ghost" id="help-btn">단계 보기</button>
             <button type="button" class="ghost" id="restore-btn">타임라인 복원 안내</button>
           </div>
-          <input id="file-input" type="file" accept="application/json,.json" hidden />
-          <p id="file-meta" class="meta">시작하려면 Timeline.json을 선택하세요.</p>
+          <input id="file-input" class="file-input" type="file" accept=".json,application/json,text/plain" />
+          <p id="file-meta" class="meta">시작하려면 Timeline.json 또는 location-history.json을 선택하세요.</p>
+          <p class="hint">파일이 안 열리면 JSON을 아래 점선 칸으로 끌어다 놓아도 됩니다.</p>
+          <div id="drop-zone" class="drop-zone">JSON 파일을 여기로 끌어다 놓기</div>
           <div class="export-card">
             <img
               id="export-qr"

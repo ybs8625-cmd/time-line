@@ -360,6 +360,29 @@ async function refreshVideos() {
   }
 }
 
+function bindDropZone() {
+  const zone = document.querySelector("#drop-zone");
+  if (!zone) return;
+  const highlight = (on) => zone.classList.toggle("active", on);
+  ["dragenter", "dragover"].forEach((type) => {
+    zone.addEventListener(type, (event) => {
+      event.preventDefault();
+      highlight(true);
+    });
+  });
+  ["dragleave", "drop"].forEach((type) => {
+    zone.addEventListener(type, (event) => {
+      event.preventDefault();
+      if (type === "dragleave") highlight(false);
+    });
+  });
+  zone.addEventListener("drop", (event) => {
+    highlight(false);
+    const file = event.dataTransfer?.files?.[0];
+    if (file) loadFile(file);
+  });
+}
+
 function bindUi() {
   const settings = loadSettings();
   els.ownerName.value = settings.name || "여행자";
@@ -368,11 +391,12 @@ function bindUi() {
     (value) => `<option value="${value}" ${value === 60 ? "selected" : ""}>${value}초</option>`,
   ).join("");
 
-  els.chooseFile.addEventListener("click", () => els.fileInput.click());
   els.fileInput.addEventListener("change", () => {
     const file = els.fileInput.files?.[0];
     if (file) loadFile(file);
+    els.fileInput.value = "";
   });
+  bindDropZone();
   els.sampleFile.addEventListener("click", async () => {
     const allowed = await ensurePrivacy();
     if (!allowed) return;
