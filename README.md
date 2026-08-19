@@ -1,4 +1,4 @@
-# 타임라인 비주얼라이저 V1.1 (웹)
+# 타임라인 비주얼라이저 V1.2 (웹)
 
 [mahlernim/google-timeline-visualizer](https://github.com/mahlernim/google-timeline-visualizer) Android 앱의 브라우저 이식 버전입니다. 아이폰에서 내보낸 `Timeline.json`을 이 컴퓨터에서 미리보고, 아이폰에서 바로 재생되는 MP4 영상과 전체 경로 PNG로 저장할 수 있습니다.
 
