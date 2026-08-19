@@ -31,9 +31,13 @@ function lerp(start, end, fraction) {
 }
 
 function unwrapNear(value, reference) {
+  if (!Number.isFinite(value) || !Number.isFinite(reference)) return Number.isFinite(value) ? value : reference;
   let result = value;
-  while (result - reference > 0.5) result -= 1;
-  while (result - reference < -0.5) result += 1;
+  for (let i = 0; i < 8; i++) {
+    if (result - reference > 0.5) result -= 1;
+    else if (result - reference < -0.5) result += 1;
+    else break;
+  }
   return result;
 }
 

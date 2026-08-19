@@ -304,7 +304,9 @@ async function loadPoints(nextPoints, label) {
   points = nextPoints;
   fileName = label;
   els.fileMeta.textContent = `${label} · 위치 ${points.length.toLocaleString("ko-KR")}개 · ${formatDataSpanKorean(points, timeZone)}`;
+  setStatus("이동 경로 준비 중…");
   rebuildPeriodSelectors();
+  await new Promise((resolve) => requestAnimationFrame(resolve));
   syncJourney();
   setStatus("타임라인을 불러왔습니다. 기간을 확인하고 미리보기를 눌러 보세요.");
 }
@@ -401,10 +403,15 @@ function bindUi() {
     const allowed = await ensurePrivacy();
     if (!allowed) return;
     setStatus("샘플 타임라인 불러오는 중…");
-    const response = await fetch("./sample/korea-2025.json");
-    const buffer = await response.arrayBuffer();
-    const parsed = await parseInWorker(buffer);
-    await loadPoints(parsed, "korea-2025.json (샘플)");
+    try {
+      const response = await fetch("./sample/korea-2025.json");
+      if (!response.ok) throw new Error("샘플 파일을 불러오지 못했습니다");
+      const buffer = await response.arrayBuffer();
+      const parsed = await parseInWorker(buffer);
+      await loadPoints(parsed, "korea-2025.json (샘플)");
+    } catch (error) {
+      setStatus(error.message || "샘플을 불러오지 못했습니다", "error");
+    }
   });
   els.helpBtn.addEventListener("click", () => els.helpDialog.showModal());
   els.restoreBtn.addEventListener("click", () => els.restoreDialog.showModal());

@@ -133,13 +133,6 @@ export function clampPeriod(period, span) {
   };
 }
 
-export function dataSpan(points, timeZone) {
-  if (!points.length) return null;
-  const first = yearMonthOf(points[0].t, timeZone);
-  const last = yearMonthOf(points[points.length - 1].t, timeZone);
-  return { first, last };
-}
-
 export function formatDataSpanKorean(points, timeZone) {
   const span = dataSpan(points, timeZone);
   if (!span) return "";
