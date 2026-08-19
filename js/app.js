@@ -61,9 +61,21 @@ let fileName = "";
 let journey = null;
 let previewing = false;
 let previewStart = 0;
+let previewProgress = 0;
 let exportAbort = null;
 let privacyAccepted = localStorage.getItem("timeline-privacy-ok") === "1";
 const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+const viewControl = { zoom: 1, panX: 0, panY: 0 };
+
+function resetView() {
+  viewControl.zoom = 1;
+  viewControl.panX = 0;
+  viewControl.panY = 0;
+}
+
+function previewDrawOptions() {
+  return { keepTrail: true, viewControl };
+}
 
 function loadSettings() {
   try {
@@ -156,6 +168,7 @@ function syncJourney() {
     els.periodSummary.textContent = `위치 ${count}개 · 약 ${km} km · ${formatPeriodKorean(period)}`;
   }
   els.titlePreview.textContent = currentTitle();
+  resetView();
   if (!previewing) drawFrame(0);
 }
 
@@ -182,13 +195,21 @@ function drawIdle() {
 }
 
 async function drawFrame(overallProgress) {
+  previewProgress = overallProgress;
   if (!journey?.points.length) {
     drawIdle();
     return;
   }
   const ctx = els.canvas.getContext("2d");
   const frame = frameAtOverallProgress(overallProgress, Number(els.duration.value));
-  await tiles.loadAll(painter.requiredTiles(painter.viewport(journey, frame, els.canvas.width, els.canvas.height)));
+  const viewport = painter.viewport(
+    journey,
+    frame,
+    els.canvas.width,
+    els.canvas.height,
+    viewControl,
+  );
+  await tiles.loadAll(painter.requiredTiles(viewport));
   painter.draw(
     ctx,
     els.canvas.width,
@@ -198,6 +219,7 @@ async function drawFrame(overallProgress) {
     Number(els.duration.value),
     currentTitle(),
     tiles,
+    previewDrawOptions(),
   );
 }
 
@@ -437,9 +459,92 @@ function bindUi() {
 
   window.addEventListener("resize", () => {
     sizeCanvas();
-    if (journey) drawFrame(previewing ? 0 : 0);
+    if (journey) drawFrame(previewProgress);
     else drawIdle();
   });
+
+  bindMapInteraction();
+}
+
+function currentBaseViewport() {
+  const frame = frameAtOverallProgress(previewProgress, Number(els.duration.value));
+  return painter.viewport(journey, frame, els.canvas.width, els.canvas.height, {
+    zoom: 1,
+    panX: 0,
+    panY: 0,
+  });
+}
+
+function zoomAt(fracX, fracY, factor) {
+  if (!journey) return;
+  const base = currentBaseViewport();
+  const baseCx = (base.minX + base.maxX) / 2;
+  const baseCy = (base.minY + base.maxY) / 2;
+  const baseSpanX = base.maxX - base.minX;
+  const baseSpanY = base.maxY - base.minY;
+  const spanX = baseSpanX / viewControl.zoom;
+  const spanY = baseSpanY / viewControl.zoom;
+  const worldX = baseCx + viewControl.panX - spanX / 2 + fracX * spanX;
+  const worldY = baseCy + viewControl.panY - spanY / 2 + fracY * spanY;
+  viewControl.zoom = Math.min(14, Math.max(0.4, viewControl.zoom * factor));
+  const nextSpanX = baseSpanX / viewControl.zoom;
+  const nextSpanY = baseSpanY / viewControl.zoom;
+  viewControl.panX = worldX - fracX * nextSpanX + nextSpanX / 2 - baseCx;
+  viewControl.panY = worldY - fracY * nextSpanY + nextSpanY / 2 - baseCy;
+  drawFrame(previewProgress);
+}
+
+function bindMapInteraction() {
+  const canvas = els.canvas;
+  document.querySelector("#zoom-in")?.addEventListener("click", () => zoomAt(0.5, 0.5, 1.25));
+  document.querySelector("#zoom-out")?.addEventListener("click", () => zoomAt(0.5, 0.5, 0.8));
+  document.querySelector("#zoom-reset")?.addEventListener("click", () => {
+    resetView();
+    drawFrame(previewProgress);
+  });
+
+  canvas.addEventListener(
+    "wheel",
+    (event) => {
+      if (!journey) return;
+      event.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      zoomAt(
+        (event.clientX - rect.left) / Math.max(1, rect.width),
+        (event.clientY - rect.top) / Math.max(1, rect.height),
+        event.deltaY > 0 ? 0.85 : 1.18,
+      );
+    },
+    { passive: false },
+  );
+
+  let dragging = false;
+  let lastX = 0;
+  let lastY = 0;
+  canvas.addEventListener("pointerdown", (event) => {
+    if (!journey || event.button !== 0) return;
+    dragging = true;
+    lastX = event.clientX;
+    lastY = event.clientY;
+    canvas.setPointerCapture(event.pointerId);
+  });
+  canvas.addEventListener("pointermove", (event) => {
+    if (!dragging || !journey) return;
+    const rect = canvas.getBoundingClientRect();
+    const base = currentBaseViewport();
+    const spanX = (base.maxX - base.minX) / viewControl.zoom;
+    const spanY = (base.maxY - base.minY) / viewControl.zoom;
+    viewControl.panX -= ((event.clientX - lastX) / Math.max(1, rect.width)) * spanX;
+    viewControl.panY -= ((event.clientY - lastY) / Math.max(1, rect.height)) * spanY;
+    lastX = event.clientX;
+    lastY = event.clientY;
+    drawFrame(previewProgress);
+  });
+  const stopDrag = () => {
+    dragging = false;
+  };
+  canvas.addEventListener("pointerup", stopDrag);
+  canvas.addEventListener("pointercancel", stopDrag);
 }
 
 sizeCanvas();

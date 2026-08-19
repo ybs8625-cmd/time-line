@@ -139,6 +139,33 @@ progress { width: 100%; accent-color: var(--brand); }
   display: block;
   border-radius: 18px;
   background: #eee8ea;
+  cursor: grab;
+  touch-action: none;
+}
+#stage:active { cursor: grabbing; }
+.map-tools {
+  position: absolute;
+  right: 28px;
+  bottom: 46px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.map-tools button {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 12px;
+  background: rgba(255, 248, 250, 0.94);
+  border: 1px solid var(--line);
+  font-size: 1.2rem;
+  line-height: 1;
+  box-shadow: var(--shadow);
+}
+.map-hint {
+  margin: 8px 4px 0;
+  color: var(--muted);
+  font-size: 0.82rem;
 }
 
 .videos { display: grid; gap: 12px; }
@@ -178,7 +205,7 @@ menu { display: flex; justify-content: flex-end; gap: 8px; padding: 0; margin: 1
 
 @media (max-width: 900px) {
   .layout { grid-template-columns: 1fr; }
-  .stage-wrap { position: static; }
+  .stage-wrap { position: relative; }
   .hero { flex-direction: column; }
   .export-card { grid-template-columns: 1fr; justify-items: start; }
 }

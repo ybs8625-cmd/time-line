@@ -111,17 +111,45 @@ export class TimelinePainter {
     return this.cachedPrepared;
   }
 
-  viewport(journey, frame, width, height) {
+  viewport(journey, frame, width, height, viewControl) {
     if (width <= 0 || height <= 0) return this.rawViewport(journey, frame.journeyProgress, width, height);
     const journeyViewport = this.cameraTrack(journey, width, height).viewportAt(frame.journeyProgress);
-    if (frame.outroProgress <= 0) return journeyViewport;
-    return this.blendViewport(
-      journeyViewport,
-      this.overviewViewport(journey, width, height),
-      easeOutCubic(frame.outroProgress),
-      width,
-      height,
+    const base =
+      frame.outroProgress <= 0
+        ? journeyViewport
+        : this.blendViewport(
+            journeyViewport,
+            this.overviewViewport(journey, width, height),
+            easeOutCubic(frame.outroProgress),
+            width,
+            height,
+          );
+    return this.withViewControl(base, viewControl, width, height);
+  }
+
+  withViewControl(viewport, viewControl, width, height) {
+    if (!viewControl) return viewport;
+    const zoom = Math.min(16, Math.max(0.35, viewControl.zoom || 1));
+    const panX = viewControl.panX || 0;
+    const panY = viewControl.panY || 0;
+    if (zoom === 1 && panX === 0 && panY === 0) return viewport;
+    const baseCx = (viewport.minX + viewport.maxX) / 2;
+    const baseCy = (viewport.minY + viewport.maxY) / 2;
+    const spanX = (viewport.maxX - viewport.minX) / zoom;
+    const spanY = (viewport.maxY - viewport.minY) / zoom;
+    const centerX = baseCx + panX;
+    const centerY = clampCenterY(baseCy + panY, spanY);
+    const tileZoom = Math.min(
+      MAX_TILE_ZOOM,
+      Math.max(MIN_TILE_ZOOM, Math.floor(Math.log2(Math.max(1, width) / (256 * Math.max(spanX, 1e-9))))),
     );
+    return {
+      minX: centerX - spanX / 2,
+      maxX: centerX + spanX / 2,
+      minY: centerY - spanY / 2,
+      maxY: centerY + spanY / 2,
+      zoom: tileZoom,
+    };
   }
 
   requiredTiles(viewport) {
@@ -137,12 +165,12 @@ export class TimelinePainter {
         tiles.push({ id: { zoom: viewport.zoom, x: normalizedX, y }, worldX });
       }
     }
-    return tiles.slice(0, 36);
+    return tiles.slice(0, 80);
   }
 
-  draw(ctx, width, height, journey, frame, journeyDurationSeconds, title, tiles) {
+  draw(ctx, width, height, journey, frame, journeyDurationSeconds, title, tiles, options = {}) {
     if (!journey.points.length || width <= 0 || height <= 0) return;
-    const viewport = this.viewport(journey, frame, width, height);
+    const viewport = this.viewport(journey, frame, width, height, options.viewControl);
     const prepared = this.prepare(journey);
     this.drawBackground(ctx, width, height);
     this.drawTiles(ctx, width, height, viewport, tiles);
@@ -154,6 +182,15 @@ export class TimelinePainter {
     const oldEnd = trailStart + visibleTrail * 0.45;
     const middleEnd = trailStart + visibleTrail * 0.75;
     const activeAlpha = Math.min(1, Math.max(0, 1 - easeOutCubic(frame.outroProgress)));
+    const keepTrail = Boolean(options.keepTrail);
+
+    if (keepTrail && current.distanceKm > 0) {
+      this.drawRouteRange(ctx, journey, prepared, viewport, width, height, 0, current.distanceKm, {
+        color: BRAND,
+        width: 3.5,
+        alpha: 0.42,
+      });
+    }
 
     this.drawRouteRange(ctx, journey, prepared, viewport, width, height, trailStart, Math.min(oldEnd, current.distanceKm), {
       color: BRAND,
