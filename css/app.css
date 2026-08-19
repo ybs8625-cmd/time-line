@@ -34,6 +34,17 @@ a { color: var(--interactive); }
 
 .brand { display: flex; gap: 14px; align-items: flex-start; }
 .brand h1 { margin: 0 0 6px; font-size: 1.55rem; }
+.brand .version {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--surface-container);
+  color: var(--interactive);
+  font-size: 0.78em;
+  font-weight: 700;
+  vertical-align: middle;
+}
 .brand p { margin: 0; color: var(--muted); max-width: 46rem; line-height: 1.5; }
 .text-link { white-space: nowrap; margin-top: 8px; }
 
