@@ -3,6 +3,7 @@ import {
   buildJourney,
   defaultPeriod,
   filterPoints,
+  formatDataSpanKorean,
   formatPeriodKorean,
   periodLabel,
   positionAtProgress,
@@ -277,7 +278,7 @@ function parseInWorker(buffer) {
 async function loadPoints(nextPoints, label) {
   points = nextPoints;
   fileName = label;
-  els.fileMeta.textContent = `${label} · 위치 ${points.length.toLocaleString("ko-KR")}개`;
+  els.fileMeta.textContent = `${label} · 위치 ${points.length.toLocaleString("ko-KR")}개 · ${formatDataSpanKorean(points, timeZone)}`;
   rebuildPeriodSelectors();
   syncJourney();
   setStatus("타임라인을 불러왔습니다. 기간을 확인하고 미리보기를 눌러 보세요.");

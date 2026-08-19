@@ -86,14 +86,37 @@ export function yearsFromPoints(points, timeZone) {
   return [...years].sort((a, b) => b - a);
 }
 
+export function dataSpan(points, timeZone) {
+  if (!points.length) return null;
+  const first = yearMonthOf(points[0].t, timeZone);
+  const last = yearMonthOf(points[points.length - 1].t, timeZone);
+  return { first, last };
+}
+
+export function formatDataSpanKorean(points, timeZone) {
+  const span = dataSpan(points, timeZone);
+  if (!span) return "";
+  const { first, last } = span;
+  if (first.year === last.year && first.month === last.month) {
+    return `${first.year}년 ${first.month}월`;
+  }
+  if (first.year === last.year) {
+    return `${first.year}년 ${first.month}월–${last.month}월`;
+  }
+  return `${first.year}년 ${first.month}월–${last.year}년 ${last.month}월`;
+}
+
 export function defaultPeriod(points, timeZone) {
-  const years = yearsFromPoints(points, timeZone);
-  const latest = years[0] ?? new Date().getFullYear();
+  const span = dataSpan(points, timeZone);
+  if (!span) {
+    const year = new Date().getFullYear();
+    return { startYear: year, startMonth: 1, endYear: year, endMonth: 12 };
+  }
   return {
-    startYear: latest,
-    startMonth: 1,
-    endYear: latest,
-    endMonth: 12,
+    startYear: span.first.year,
+    startMonth: span.first.month,
+    endYear: span.last.year,
+    endMonth: span.last.month,
   };
 }
 
